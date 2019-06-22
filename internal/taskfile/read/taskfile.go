@@ -22,14 +22,22 @@ var (
 
 // Taskfile reads a Taskfile for a given directory
 func Taskfile(dir string) (*taskfile.Taskfile, error) {
-	path := filepath.Join(dir, "Taskfile.yml")
-	if _, err := os.Stat(path); err != nil {
+	path, found, err := searchForFile(dir, "Taskfile.yml")
+	if !found {
 		return nil, ErrNoTaskfileFound
 	}
+	if err != nil {
+		return nil, err
+	}
+
 	t, err := readTaskfile(path)
 	if err != nil {
 		return nil, err
 	}
+
+	// Use the dir where we found the taskfile as the base
+	// otherwise the includes won't be relative to it
+	dir = filepath.Dir(path)
 
 	for namespace, path := range t.Includes {
 		path = filepath.Join(dir, path)
