@@ -55,6 +55,17 @@ func Taskfile(dir string) (*taskfile.Taskfile, error) {
 		if len(includedTaskfile.Includes) > 0 {
 			return nil, ErrIncludedTaskfilesCantHaveIncludes
 		}
+
+		for _, task := range includedTaskfile.Tasks {
+			if task.Dir != "" {
+				// If the dir was specified on the task then join this with the project root
+				task.Dir = filepath.Join(dir, task.Dir)
+			} else {
+				// Otherwise ensure the task runs from the same directory as its taskfile
+				task.Dir = filepath.Dir(path)
+			}
+		}
+
 		if err = taskfile.Merge(t, includedTaskfile, namespace); err != nil {
 			return nil, err
 		}
