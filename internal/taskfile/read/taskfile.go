@@ -1,11 +1,14 @@
 package read
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/go-task/task/v2/internal/taskfile"
 
@@ -48,10 +51,20 @@ func Taskfile(dir string) (*taskfile.Taskfile, error) {
 		if info.IsDir() {
 			path = filepath.Join(path, "Taskfile.yml")
 		}
-		includedTaskfile, err := readTaskfile(path)
-		if err != nil {
-			return nil, err
+		var includedTaskfile *taskfile.Taskfile
+
+		if strings.HasSuffix(path, "package.json") {
+			includedTaskfile, err = readPackageJson(path)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			includedTaskfile, err = readTaskfile(path)
+			if err != nil {
+				return nil, err
+			}
 		}
+
 		if len(includedTaskfile.Includes) > 0 {
 			return nil, ErrIncludedTaskfilesCantHaveIncludes
 		}
@@ -96,4 +109,46 @@ func readTaskfile(file string) (*taskfile.Taskfile, error) {
 	}
 	var t taskfile.Taskfile
 	return &t, yaml.NewDecoder(f).Decode(&t)
+}
+
+type packageJson struct {
+	Scripts map[string]string `json:"scripts"`
+}
+
+func readPackageJson(file string) (*taskfile.Taskfile, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	fd, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+
+	var p packageJson
+
+	if err = json.Unmarshal(fd, &p); err != nil {
+		return nil, err
+	}
+
+	t := taskfile.Taskfile{
+		Version: "2",
+		Tasks:   taskfile.Tasks{},
+	}
+
+	for name, cmd := range p.Scripts {
+		t.Tasks[name] = &taskfile.Task{
+			Desc: fmt.Sprintf("→ %s", file),
+			Cmds: []*taskfile.Cmd{
+				&taskfile.Cmd{
+					Cmd: "yarn",
+				},
+				&taskfile.Cmd{
+					Cmd: "yarn " + cmd,
+				},
+			},
+		}
+	}
+
+	return &t, nil
 }
