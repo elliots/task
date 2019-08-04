@@ -10,7 +10,7 @@ import (
 
 // PrintTasksHelp prints help os tasks that have a description
 func (e *Executor) PrintTasksHelp() {
-	tasks := e.tasksWithDesc()
+	tasks := e.sortedTasks()
 	if len(tasks) == 0 {
 		e.Logger.Outf("task: No tasks with description available")
 		return
@@ -25,12 +25,10 @@ func (e *Executor) PrintTasksHelp() {
 	w.Flush()
 }
 
-func (e *Executor) tasksWithDesc() (tasks []*taskfile.Task) {
+func (e *Executor) sortedTasks() (tasks []*taskfile.Task) {
 	tasks = make([]*taskfile.Task, 0, len(e.Taskfile.Tasks))
 	for _, task := range e.Taskfile.Tasks {
-		if task.Desc != "" {
-			tasks = append(tasks, task)
-		}
+		tasks = append(tasks, task)
 	}
 	sort.Slice(tasks, func(i, j int) bool { return tasks[i].Task < tasks[j].Task })
 	return
