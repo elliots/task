@@ -1,6 +1,8 @@
 package read
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -41,6 +43,18 @@ func Taskfile(dir string) (*taskfile.Taskfile, error) {
 	// Use the dir where we found the taskfile as the base
 	// otherwise the includes won't be relative to it
 	dir = filepath.Dir(path)
+
+	// Store the absolute path to the project root as an environment variable
+	absdir, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path for directory %s: %s", dir, err)
+	}
+	if t.Vars == nil {
+		t.Vars = taskfile.Vars{}
+	}
+	t.Vars["PROJECT_ROOT"] = taskfile.Var{
+		Static: absdir,
+	}
 
 	for namespace, path := range t.Includes {
 		path = filepath.Join(dir, path)
@@ -138,7 +152,7 @@ func readPackageJson(file string) (*taskfile.Taskfile, error) {
 
 	for name, cmd := range p.Scripts {
 		t.Tasks[name] = &taskfile.Task{
-			Desc: fmt.Sprintf("→ %s", file),
+			Desc: fmt.Sprintf("→ %s%s", file, findLineNumber(fd, name)),
 			Cmds: []*taskfile.Cmd{
 				&taskfile.Cmd{
 					Cmd: "yarn",
@@ -151,4 +165,25 @@ func readPackageJson(file string) (*taskfile.Taskfile, error) {
 	}
 
 	return &t, nil
+}
+
+func findLineNumber(f []byte, scriptName string) string {
+	// Splits on newlines by default.
+	scanner := bufio.NewScanner(bytes.NewReader(f))
+
+	line := 1
+	// https://golang.org/pkg/bufio/#Scanner.Scan
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), `"`+scriptName+`":`) {
+			return fmt.Sprintf(":%d", line)
+		}
+
+		line++
+	}
+
+	if err := scanner.Err(); err != nil {
+		panic(err) // Probably shouldn't be possible?
+	}
+
+	return ""
 }
