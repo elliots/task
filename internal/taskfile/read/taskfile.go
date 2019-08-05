@@ -68,7 +68,7 @@ func Taskfile(dir string) (*taskfile.Taskfile, error) {
 		var includedTaskfile *taskfile.Taskfile
 
 		if strings.HasSuffix(path, "package.json") {
-			includedTaskfile, err = readPackageJson(path)
+			includedTaskfile, err = readPackageJson(absdir, path)
 			if err != nil {
 				return nil, err
 			}
@@ -129,7 +129,7 @@ type packageJson struct {
 	Scripts map[string]string `json:"scripts"`
 }
 
-func readPackageJson(file string) (*taskfile.Taskfile, error) {
+func readPackageJson(projectRoot, file string) (*taskfile.Taskfile, error) {
 	f, err := os.Open(file)
 	if err != nil {
 		return nil, err
@@ -150,9 +150,18 @@ func readPackageJson(file string) (*taskfile.Taskfile, error) {
 		Tasks:   taskfile.Tasks{},
 	}
 
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	relFile, err := filepath.Rel(wd, file)
+	if err != nil {
+		relFile = file
+	}
+
 	for name, cmd := range p.Scripts {
 		t.Tasks[name] = &taskfile.Task{
-			Desc: fmt.Sprintf("→ %s%s", file, findLineNumber(fd, name)),
+			Desc: fmt.Sprintf("→ %s%s", relFile, findLineNumber(fd, name)),
 			Cmds: []*taskfile.Cmd{
 				&taskfile.Cmd{
 					Cmd: "yarn",
