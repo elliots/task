@@ -57,6 +57,7 @@ func main() {
 		silent      bool
 		dry         bool
 		summary     bool
+		json        bool
 		dir         string
 		output      string
 	)
@@ -71,6 +72,7 @@ func main() {
 	pflag.BoolVarP(&silent, "silent", "s", false, "disables echoing")
 	pflag.BoolVar(&dry, "dry", false, "compiles and prints tasks in the order that they would be run, without executing them")
 	pflag.BoolVar(&summary, "summary", false, "show summary about a task")
+	pflag.BoolVar(&json, "json", false, "print task list as json")
 	pflag.StringVarP(&dir, "dir", "d", "", "sets directory of execution")
 	pflag.StringVarP(&output, "output", "o", "", "sets output style: [interleaved|group|prefixed]")
 	pflag.Parse()
@@ -99,6 +101,7 @@ func main() {
 		Dir:     dir,
 		Dry:     dry,
 		Summary: summary,
+		JSON:    json,
 
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,
@@ -110,7 +113,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if list {
+	if list || json {
 		e.PrintTasksHelp()
 		return
 	}

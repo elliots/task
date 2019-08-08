@@ -1,6 +1,7 @@
 package task
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"text/tabwriter"
@@ -11,6 +12,16 @@ import (
 // PrintTasksHelp prints help os tasks that have a description
 func (e *Executor) PrintTasksHelp() {
 	tasks := e.sortedTasks()
+
+	if e.JSON {
+		if err := json.NewEncoder(e.Stdout).Encode(tasks); err != nil {
+			json.NewEncoder(e.Stdout).Encode(map[string]string{
+				"error": err.Error(),
+			})
+		}
+		return
+	}
+
 	if len(tasks) == 0 {
 		e.Logger.Outf("task: No tasks with description available")
 		return

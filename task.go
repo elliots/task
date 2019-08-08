@@ -38,6 +38,7 @@ type Executor struct {
 	Silent   bool
 	Dry      bool
 	Summary  bool
+	JSON     bool
 
 	Stdin  io.Reader
 	Stdout io.Writer
