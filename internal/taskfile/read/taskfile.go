@@ -159,15 +159,12 @@ func readPackageJson(projectRoot, file string) (*taskfile.Taskfile, error) {
 		relFile = file
 	}
 
-	for name, cmd := range p.Scripts {
+	for name := range p.Scripts {
 		t.Tasks[name] = &taskfile.Task{
 			Desc: fmt.Sprintf("→ %s%s", relFile, findLineNumber(fd, name)),
 			Cmds: []*taskfile.Cmd{
 				&taskfile.Cmd{
-					Cmd: "yarn",
-				},
-				&taskfile.Cmd{
-					Cmd: "yarn " + cmd,
+					Cmd: "pnpm run " + name,
 				},
 			},
 		}
