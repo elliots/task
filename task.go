@@ -239,7 +239,7 @@ func (e *Executor) runCommand(ctx context.Context, t *taskfile.Task, call taskfi
 		return e.RunTask(ctx, taskfile.Call{Task: cmd.Task, Vars: cmd.Vars})
 	case cmd.Cmd != "":
 		if e.Verbose || (!cmd.Silent && !t.Silent && !e.Silent) {
-			e.Logger.Errf(cmd.Cmd)
+			e.Logger.Outf(">" + cmd.Cmd)
 		}
 
 		if e.Dry {
